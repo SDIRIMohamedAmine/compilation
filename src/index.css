@@ -1,0 +1,193 @@
+/* index.css — Neo-Sousse 2030 design system
+   Theme: dark industrial / smart city terminal
+   Font: IBM Plex Mono (display) + IBM Plex Sans (body)
+*/
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0a0c0f;
+  --bg-2:       #111418;
+  --bg-3:       #181c22;
+  --bg-card:    #13171d;
+  --border:     #1e2530;
+  --border-hi:  #2a3545;
+  --text:       #c8d4e0;
+  --text-2:     #6b7f96;
+  --text-3:     #3d4f62;
+  --accent:     #00d4ff;
+  --accent-dim: #004d5e;
+  --green:      #00e676;
+  --green-dim:  #003d1f;
+  --amber:      #ffab40;
+  --amber-dim:  #3d2800;
+  --red:        #ff5252;
+  --red-dim:    #3d0f0f;
+  --purple:     #ce93d8;
+  --font-mono:  'IBM Plex Mono', monospace;
+  --font-sans:  'IBM Plex Sans', sans-serif;
+  --radius:     6px;
+  --radius-lg:  10px;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+
+/* ── reusable atoms ─────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.badge {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500;
+  padding: 2px 8px; border-radius: 3px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.badge-green  { background: var(--green-dim);  color: var(--green); }
+.badge-amber  { background: var(--amber-dim);  color: var(--amber); }
+.badge-red    { background: var(--red-dim);    color: var(--red); }
+.badge-blue   { background: var(--accent-dim); color: var(--accent); }
+.badge-purple { background: #2d1f38;           color: var(--purple); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  padding: 7px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border-hi);
+  background: var(--bg-3); color: var(--text);
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em;
+}
+.btn:hover  { border-color: var(--accent); color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.btn-danger  { background: var(--red-dim);    border-color: var(--red);    color: var(--red); }
+
+input, select, textarea {
+  background: var(--bg-3); color: var(--text);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius); padding: 8px 12px;
+  font-family: var(--font-sans); font-size: 13px;
+  outline: none; transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+/* ── page layout ────────────────────────────────── */
+.app-shell {
+  display: flex; height: 100vh; overflow: hidden;
+}
+
+.sidebar {
+  width: 210px; min-width: 210px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.main-area {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  height: 50px; flex-shrink: 0;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 1.5rem; gap: 1rem;
+}
+
+.page-content {
+  flex: 1; overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* ── table ──────────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th {
+  text-align: left; padding: 8px 12px;
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.08em; color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+}
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.data-table tr:hover td { background: var(--bg-3); }
+
+/* ── mono code block ────────────────────────────── */
+.code-block {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+  font-family: var(--font-mono); font-size: 11px;
+  line-height: 1.7; color: var(--text-2);
+  white-space: pre-wrap; word-break: break-all;
+}
+.kw-select  { color: var(--accent); font-weight: 500; }
+.kw-from    { color: var(--purple); }
+.kw-where   { color: var(--amber); }
+.kw-val     { color: var(--green); }
+
+/* ── FSM stepper ─────────────────────────────────── */
+.fsm-stepper { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+.fsm-step {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 3px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border); background: var(--bg-3);
+  color: var(--text-3); transition: all 0.2s;
+}
+.fsm-step.active  { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.fsm-step.done    { background: var(--green-dim);  border-color: var(--green);  color: var(--green); }
+.fsm-step.error   { background: var(--red-dim);    border-color: var(--red);    color: var(--red); }
+.fsm-arrow { color: var(--text-3); font-size: 12px; padding: 0 4px; }
+
+/* ── stat card ───────────────────────────────────── */
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+}
+.stat-label { font-size: 10px; color: var(--text-3); letter-spacing: 0.08em;
+              text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 6px; }
+.stat-value { font-size: 28px; font-weight: 500; font-family: var(--font-mono); line-height: 1; }
+.stat-sub   { font-size: 11px; color: var(--text-2); margin-top: 4px; }
+
+/* ── animations ──────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); display: inline-block;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.3s ease forwards; }
