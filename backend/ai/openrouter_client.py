@@ -15,7 +15,7 @@ class AIError(Exception):
 class OpenRouterClient:
     def __init__(self):
         # Fallback to your hardcoded key if the .env variable isn't set
-        self.api_key ="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"
+        self.api_key = "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"
         self.url = "https://openrouter.ai/api/v1/chat/completions"
         # Mistral 7B Free is generally the most stable free model on OpenRouter
         self.model = "openrouter/auto"

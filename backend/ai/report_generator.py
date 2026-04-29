@@ -49,6 +49,34 @@ class SmartCityContext:
         """)
         return dict(row) if row else {}
 
+    @staticmethod
+    def get_summary() -> str:
+        """Build a compact city-state summary for injection into custom prompts."""
+        try:
+            sensors = SmartCityContext.get_sensors()
+            interventions = SmartCityContext.get_interventions()
+            pollution = SmartCityContext.get_pollution()
+            co2 = SmartCityContext.get_co2()
+
+            poll_summary = "; ".join(
+                [f"{p['nom']} {p['type_mesure']}={p['moyenne']}" for p in pollution[:6]]
+            ) or "pas de données"
+            interv_summary = "; ".join(
+                [f"{i['zone']} [{i['statut']}] priorité={i['priorite']}" for i in interventions[:5]]
+            ) or "aucune"
+
+            return (
+                f"ÉTAT DE LA VILLE NEO-SOUSSE 2030 (données temps réel):\n"
+                f"Capteurs: {sensors.get('actifs')}/{sensors.get('total')} actifs, "
+                f"{sensors.get('hors_service')} hors service, taux erreur moyen {sensors.get('taux_erreur_pct')}%.\n"
+                f"Pollution (24h): {poll_summary}.\n"
+                f"Interventions actives: {interv_summary}.\n"
+                f"CO2 (7j): {co2.get('total_economie_co2')} kg économisés sur {co2.get('nb_trajets')} trajets."
+            )
+        except Exception:
+            return "Données de la ville non disponibles."
+
+
 class ReportGenerator:
     SYSTEM_PROMPT = "Tu es l'IA Superviseur de Neo-Sousse 2030, une ville intelligente en Tunisie. Rédige un rapport professionnel en français avec des listes à puces."
 
@@ -68,46 +96,96 @@ class ReportGenerator:
             return f"Bilan CO2 (7j).\nÉconomie totale: {c.get('total_economie_co2')} kg. Trajets: {c.get('nb_trajets')}. Moyenne: {c.get('moy_co2_par_trajet')} kg/trajet.\nStructure: 1. Économies 2. Analyse 3. Recommandations"
         return "Génère un résumé de la ville intelligente."
 
+
 def generate_report(report_type: str = "air") -> dict:
     error_msg = None
     text = ""
     safe_context = {"nb_sensors": 0, "interventions": 0}
 
     try:
-        # 1. Fetch DB Context securely
         context = {
-            "pollution": SmartCityContext.get_pollution(),
-            "sensors": SmartCityContext.get_sensors(),
+            "pollution":     SmartCityContext.get_pollution(),
+            "sensors":       SmartCityContext.get_sensors(),
             "interventions": SmartCityContext.get_interventions(),
-            "co2": SmartCityContext.get_co2()
+            "co2":           SmartCityContext.get_co2(),
         }
-        
-        safe_context["nb_sensors"] = context["sensors"].get("total", 0)
+        safe_context["nb_sensors"]    = context["sensors"].get("total", 0)
         safe_context["interventions"] = len(context["interventions"])
 
-        # 2. Build AI Request
         messages = [
             {"role": "system", "content": ReportGenerator.SYSTEM_PROMPT},
-            {"role": "user", "content": ReportGenerator.build_prompt(report_type, context)}
+            {"role": "user",   "content": ReportGenerator.build_prompt(report_type, context)},
         ]
-
-        # 3. Get AI Response
         text = ai_client.chat(messages)
 
     except AIError as e:
         error_msg = f"API AI non joignable : {str(e)}"
-        text = f"**[Rapport par défaut - Mode Hors Ligne]**\nLe système d'intelligence artificielle n'a pas pu être contacté.\n\nDate: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\nAssurez-vous que la clé OPENROUTER_API_KEY est valide."
+        text = (
+            f"**[Rapport par défaut - Mode Hors Ligne]**\n"
+            f"Le système d'intelligence artificielle n'a pas pu être contacté.\n\n"
+            f"Date: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+            f"Assurez-vous que la clé OPENROUTER_API_KEY est valide."
+        )
     except Exception as e:
-        # Catch SQL errors, missing tables, or import issues
         print("Erreur critique AI:\n", traceback.format_exc())
         error_msg = f"Erreur Interne ({type(e).__name__}): {str(e)}"
         text = "**[Erreur Système]**\nUn problème technique empêche la génération du rapport."
 
-    # Return a clean 200 payload even if it failed, so React can display the amber banner!
     return {
         "report_type": report_type,
-        "text": text,
-        "suggestions": [], 
-        "context": safe_context,
-        "error": error_msg,
+        "text":        text,
+        "suggestions": [],
+        "context":     safe_context,
+        "error":       error_msg,
+    }
+
+
+def generate_custom_report(user_prompt: str) -> dict:
+    """
+    Generate a free-form report from a user-provided prompt.
+    Automatically injects current city state as context.
+    """
+    error_msg = None
+    text = ""
+
+    try:
+        city_context = SmartCityContext.get_summary()
+
+        system = (
+            "Tu es l'IA Superviseur de Neo-Sousse 2030, une ville intelligente en Tunisie. "
+            "Tu as accès aux données temps réel de la ville. "
+            "Rédige des rapports professionnels en français, clairs et structurés avec des listes à puces."
+        )
+
+        full_prompt = (
+            f"{city_context}\n\n"
+            f"---\n\n"
+            f"Demande de l'opérateur:\n{user_prompt}"
+        )
+
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user",   "content": full_prompt},
+        ]
+        text = ai_client.chat(messages, max_tokens=800)
+
+    except AIError as e:
+        error_msg = f"API AI non joignable : {str(e)}"
+        text = (
+            f"**[Mode Hors Ligne]**\n"
+            f"Impossible de contacter l'IA.\n\n"
+            f"Votre demande: {user_prompt}\n\n"
+            f"Date: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        )
+    except Exception as e:
+        print("Erreur generate_custom_report:\n", traceback.format_exc())
+        error_msg = f"Erreur Interne ({type(e).__name__}): {str(e)}"
+        text = "**[Erreur Système]**\nUn problème technique empêche la génération du rapport."
+
+    return {
+        "report_type": "custom",
+        "text":        text,
+        "suggestions": [],
+        "context":     {},
+        "error":       error_msg,
     }
