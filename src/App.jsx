@@ -1,5 +1,5 @@
 // App.jsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Sidebar           from "./components/Sidebar";
 import Dashboard         from "./pages/Dashboard";
 import CompilerPage      from "./pages/CompilerPage";
@@ -7,6 +7,7 @@ import AutomataPage      from "./pages/AutomataPage";
 import SensorsPage       from "./pages/SensorsPage";
 import InterventionsPage from "./pages/InterventionsPage";
 import ReportsPage       from "./pages/ReportsPage";
+import VehiculesPage     from "./pages/VehiculesPage";
 import { useState, useEffect } from "react";
 
 function Topbar({ page }) {
@@ -36,6 +37,7 @@ const PAGE_TITLES = {
   "/automata":      "Automates FSM",
   "/sensors":       "Capteurs",
   "/interventions": "Interventions",
+  "/vehicules":     "Véhicules",
   "/reports":       "Rapports IA",
 };
 
@@ -48,8 +50,8 @@ export default function App() {
 }
 
 function AppShell() {
-  const path  = window.location.pathname;
-  const title = PAGE_TITLES[path] || "Neo-Sousse 2030";
+  const location = useLocation();
+  const title    = PAGE_TITLES[location.pathname] || "Neo-Sousse 2030";
 
   return (
     <div className="app-shell">
@@ -63,6 +65,7 @@ function AppShell() {
             <Route path="/automata"      element={<AutomataPage />} />
             <Route path="/sensors"       element={<SensorsPage />} />
             <Route path="/interventions" element={<InterventionsPage />} />
+            <Route path="/vehicules"     element={<VehiculesPage />} />
             <Route path="/reports"       element={<ReportsPage />} />
           </Routes>
         </div>

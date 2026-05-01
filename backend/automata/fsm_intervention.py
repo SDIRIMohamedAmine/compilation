@@ -11,14 +11,14 @@ Transitions table:
   (tech1_assigne,  validation_tech2)  -> tech2_valide
   (tech2_valide,   validation_ia)     -> ia_valide
   (ia_valide,      cloture)           -> termine
-  -- cancellation allowed from any non-terminal state:
-  (demande,        annulation)        -> annule   [if you add annule state]
 """
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "database"))
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
-from db_utils import execute, fetch_one
-from fsm_engine import BaseFSM
+from database.db_utils import execute, fetch_one
+from automata.fsm_engine import BaseFSM
 
 
 # ── callbacks ─────────────────────────────────────────────────────────────────
@@ -58,7 +58,6 @@ def _on_termine(intervention_id: int, **kwargs):
         "UPDATE interventions SET date_terminaison=NOW() WHERE intervention_id=%s",
         (intervention_id,)
     )
-    # restore capteur
     row = fetch_one(
         "SELECT capteur_id, technicien1_id FROM interventions WHERE intervention_id=%s",
         (intervention_id,)
@@ -83,10 +82,10 @@ class InterventionFSM(BaseFSM):
     STATE_FIELD = "statut"
 
     TRANSITIONS = {
-        ("demande",        "assignation_tech1"): "tech1_assigne",
-        ("tech1_assigne",  "validation_tech2"):  "tech2_valide",
-        ("tech2_valide",   "validation_ia"):     "ia_valide",
-        ("ia_valide",      "cloture"):           "termine",
+        ("demande",       "assignation_tech1"): "tech1_assigne",
+        ("tech1_assigne", "validation_tech2"):  "tech2_valide",
+        ("tech2_valide",  "validation_ia"):     "ia_valide",
+        ("ia_valide",     "cloture"):           "termine",
     }
 
     CALLBACKS = {

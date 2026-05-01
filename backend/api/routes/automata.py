@@ -4,14 +4,16 @@ api/routes/automata.py
 Expose FSM operations via REST.
 """
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "automata"))
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 from fastapi import APIRouter, HTTPException
-from fsm_capteur import CapteurFSM
-from fsm_intervention import InterventionFSM
-from fsm_vehicule import VehiculeFSM
-from fsm_engine import FSMError
-from sweeper import sweep_all
+from automata.fsm_capteur      import CapteurFSM
+from automata.fsm_intervention import InterventionFSM
+from automata.fsm_vehicule     import VehiculeFSM
+from automata.fsm_engine       import FSMError
+from automata.sweeper          import sweep_all
 
 router = APIRouter()
 
@@ -55,7 +57,7 @@ def fsm_trigger(entity_type: str, entity_id: int, body: dict):
 
 @router.post("/{entity_type}/{entity_id}/verify")
 def fsm_verify(entity_type: str, entity_id: int, body: dict):
-    """Dry-run a sequence without touching DB."""
+    """Dry-run a sequence of events without touching DB."""
     events = body.get("events", [])
     if not events:
         raise HTTPException(400, "events list required")
@@ -69,5 +71,5 @@ def fsm_verify(entity_type: str, entity_id: int, body: dict):
 
 @router.post("/sweep")
 def run_sweep():
-    """Trigger background sweeper manually."""
+    """Manually trigger the background sweeper."""
     return sweep_all()

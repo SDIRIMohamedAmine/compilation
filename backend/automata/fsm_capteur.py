@@ -16,10 +16,12 @@ Transitions table:
   (HORS_SERVICE,   remise_en_service)   -> ACTIF
 """
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "database"))
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
-from db_utils import fetch_one, execute
-from fsm_engine import BaseFSM
+from database.db_utils import fetch_one, execute
+from automata.fsm_engine import BaseFSM
 
 
 # ── callbacks ─────────────────────────────────────────────────────────────────
@@ -73,9 +75,9 @@ class CapteurFSM(BaseFSM):
     }
 
     CALLBACKS = {
-        ("actif",    "detection_anomalie"): _on_signale,
-        ("signale",  "panne"):              _on_hors_service,
-        ("actif",    "panne"):              _on_hors_service,
-        ("en_maintenance", "reparation"):   _on_remise_actif,
-        ("hors_service", "remise_en_service"): _on_remise_actif,
+        ("actif",          "detection_anomalie"): _on_signale,
+        ("signale",        "panne"):              _on_hors_service,
+        ("actif",          "panne"):              _on_hors_service,
+        ("en_maintenance", "reparation"):         _on_remise_actif,
+        ("hors_service",   "remise_en_service"):  _on_remise_actif,
     }

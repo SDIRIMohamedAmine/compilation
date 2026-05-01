@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 from fastapi import APIRouter
 import sys, os
-_HERE = os.path.dirname(os.path.abspath(__file__))          # backend/ai/
-_DB   = os.path.join(_HERE, "../..", "database")               # backend/database/
-if os.path.isdir(_DB) and os.path.abspath(_DB) not in [os.path.abspath(p) for p in sys.path]:
-    sys.path.insert(0, os.path.abspath(_DB))
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
-from database.db_utils import fetch_all, fetch_one, execute
+from database.db_utils import fetch_all, fetch_one
 
 router = APIRouter()
 
 
 @router.get("/stats")
 def global_stats():
-    sensors  = fetch_one("""
+    sensors = fetch_one("""
         SELECT
-            COUNT(*) FILTER (WHERE statut='actif')          AS actifs,
-            COUNT(*) FILTER (WHERE statut='signale')        AS signales,
-            COUNT(*) FILTER (WHERE statut='hors_service')   AS hors_service,
+            COUNT(*) FILTER (WHERE statut='actif')         AS actifs,
+            COUNT(*) FILTER (WHERE statut='signale')       AS signales,
+            COUNT(*) FILTER (WHERE statut='en_maintenance')AS en_maintenance,
+            COUNT(*) FILTER (WHERE statut='hors_service')  AS hors_service,
             COUNT(*)                                        AS total
         FROM capteurs
     """)
@@ -42,22 +42,26 @@ def global_stats():
         "capteurs":      dict(sensors),
         "anomalies_24h": anomalies["n"],
         "interventions": dict(interventions),
-        "iqa_moyen":     iqa["iqa_moyen"],
+        "iqa_moyen":     iqa["iqa_moyen"] if iqa else None,
     }
 
 
 @router.get("/timeseries")
 def timeseries(type_mesure: str = "pm25", hours: int = 24):
+    """
+    Returns hourly averages per zone for the last `hours` hours.
+    Uses interval arithmetic compatible with all PostgreSQL versions.
+    """
     rows = fetch_all("""
         SELECT
-            DATE_TRUNC('hour', m.timestamp) AS heure,
-            z.nom                           AS zone,
-            ROUND(AVG(m.valeur)::numeric,2) AS valeur
+            DATE_TRUNC('hour', m.timestamp)  AS heure,
+            z.nom                            AS zone,
+            ROUND(AVG(m.valeur)::numeric, 2) AS valeur
         FROM mesures m
         JOIN capteurs c ON c.capteur_id = m.capteur_id
         JOIN zones z    ON z.zone_id    = c.zone_id
         WHERE m.type_mesure = %s
-          AND m.timestamp > NOW() - make_interval(hours => %s)
+          AND m.timestamp   > NOW() - (%s * INTERVAL '1 hour')
         GROUP BY heure, z.nom
         ORDER BY heure ASC
     """, (type_mesure, hours))

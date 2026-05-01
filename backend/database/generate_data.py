@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-generate_data.py — Seed 1000+ realistic rows
-Usage: python generate_data.py
+database/generate_data.py — Seed 1000+ realistic rows
+Usage (run from backend/ root):
+    python -m database.generate_data
+  or:
+    cd backend && python database/generate_data.py
 """
+import sys, os
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
 import random
 import psycopg2
 import psycopg2.extras
@@ -34,12 +42,12 @@ def days_ago(n): return now_utc() - timedelta(days=n)
 # ── seed data ─────────────────────────────────────────────────────────────────
 
 ZONES_DATA = [
-    ("Zone Centre",          "Centre historique et commercial",  12.4, 85000),
-    ("Zone Port",            "Zone portuaire et industrielle legere", 8.7, 32000),
-    ("Zone Industrielle",    "Complexe industriel zone nord",    22.1, 5000),
-    ("Zone Sahloul",         "Quartier residentiel moderne",     15.3, 61000),
-    ("Zone Medina",          "Medina et vieux quartiers",        6.2,  28000),
-    ("Zone Hammam Sousse",   "Littoral et tourisme",             19.8, 42000),
+    ("Zone Centre",        "Centre historique et commercial",       12.4, 85000),
+    ("Zone Port",          "Zone portuaire et industrielle legere", 8.7,  32000),
+    ("Zone Industrielle",  "Complexe industriel zone nord",         22.1, 5000),
+    ("Zone Sahloul",       "Quartier residentiel moderne",          15.3, 61000),
+    ("Zone Medina",        "Medina et vieux quartiers",             6.2,  28000),
+    ("Zone Hammam Sousse", "Littoral et tourisme",                  19.8, 42000),
 ]
 
 SENSOR_TYPE_BY_ZONE = {
@@ -52,25 +60,25 @@ SENSOR_TYPE_BY_ZONE = {
 }
 
 COORDS = {
-    "Zone Centre":       (35.8256, 10.6369),
-    "Zone Port":         (35.8350, 10.6120),
-    "Zone Industrielle": (35.8580, 10.5900),
-    "Zone Sahloul":      (35.8100, 10.6250),
-    "Zone Medina":       (35.8280, 10.6340),
-    "Zone Hammam Sousse":(35.8570, 10.5980),
+    "Zone Centre":        (35.8256, 10.6369),
+    "Zone Port":          (35.8350, 10.6120),
+    "Zone Industrielle":  (35.8580, 10.5900),
+    "Zone Sahloul":       (35.8100, 10.6250),
+    "Zone Medina":        (35.8280, 10.6340),
+    "Zone Hammam Sousse": (35.8570, 10.5980),
 }
 
 TECHNICIENS_DATA = [
-    ("Ben Ali",    "Ahmed",  "air",     True),
-    ("Mansouri",   "Sara",   "bruit",   True),
-    ("Karray",     "Karim",  "trafic",  True),
-    ("Hamdi",      "Nadia",  "general", False),
-    ("Trabelsi",   "Youssef","air",     True),
-    ("Boughzala",  "Amira",  "bruit",   False),
-    ("Chaabane",   "Tarek",  "trafic",  True),
-    ("Jebali",     "Fatma",  "general", True),
-    ("Ouerghi",    "Zied",   "air",     True),
-    ("Sayhi",      "Ines",   "bruit",   True),
+    ("Ben Ali",   "Ahmed",  "air",     True),
+    ("Mansouri",  "Sara",   "bruit",   True),
+    ("Karray",    "Karim",  "trafic",  True),
+    ("Hamdi",     "Nadia",  "general", False),
+    ("Trabelsi",  "Youssef","air",     True),
+    ("Boughzala", "Amira",  "bruit",   False),
+    ("Chaabane",  "Tarek",  "trafic",  True),
+    ("Jebali",    "Fatma",  "general", True),
+    ("Ouerghi",   "Zied",   "air",     True),
+    ("Sayhi",     "Ines",   "bruit",   True),
 ]
 
 SENSOR_MEASURE_MAP = {
@@ -80,6 +88,7 @@ SENSOR_MEASURE_MAP = {
     "no2":    ["no2","o3"],
     "o3":     ["o3"],
 }
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -113,17 +122,21 @@ def seed_all():
     print(f"[OK] techniciens: {len(tech_ids)}")
 
     # ── capteurs ──
-    capteur_ids = []
+    capteur_ids  = []
     capteur_types = {}
-    statuts = ["actif","actif","actif","actif","actif","signale","signale","en_maintenance","hors_service","inactif"]
+    statuts = ["actif","actif","actif","actif","actif",
+               "signale","signale","en_maintenance","hors_service","inactif"]
     seuil_map = {"air":25.0,"bruit":55.0,"trafic":1500.0,"no2":40.0,"o3":60.0}
     c_count = 0
 
     for zone_nom, types in SENSOR_TYPE_BY_ZONE.items():
         lat, lon = COORDS[zone_nom]
         for typ in types:
-            statut = random.choice(statuts)
-            taux_err = round(random.uniform(0.0, 0.05) if statut == "actif" else random.uniform(0.05, 0.45), 3)
+            statut   = random.choice(statuts)
+            taux_err = round(
+                random.uniform(0.0, 0.05) if statut == "actif"
+                else random.uniform(0.05, 0.45), 3
+            )
             install_date = fake.date_between(start_date="-3y", end_date="-1m")
             lat_j = lat + random.uniform(-0.01, 0.01)
             lon_j = lon + random.uniform(-0.01, 0.01)
@@ -150,7 +163,7 @@ def seed_all():
 
     # ── citoyens ──
     citoyen_ids = []
-    zone_list = list(zone_ids.values())
+    zone_list   = list(zone_ids.values())
     for _ in range(200):
         cur.execute("""
             INSERT INTO citoyens (nom, prenom, email, zone_id, score_ecologique, date_inscription)
@@ -165,13 +178,14 @@ def seed_all():
             fake.date_between(start_date="-2y", end_date="today")
         ))
         row = cur.fetchone()
-        if row: citoyen_ids.append(row["citoyen_id"])
+        if row:
+            citoyen_ids.append(row["citoyen_id"])
     print(f"[OK] citoyens: {len(citoyen_ids)}")
 
     # ── vehicules ──
     vehicule_ids = []
-    types_v = ["voiture","bus","velo","trottinette","autonome"]
-    weights  = [0.45, 0.15, 0.20, 0.10, 0.10]
+    types_v   = ["voiture","bus","velo","trottinette","autonome"]
+    weights   = [0.45, 0.15, 0.20, 0.10, 0.10]
     statuts_v = ["stationne","stationne","stationne","en_route","arrive"]
     for i in range(150):
         typ = random.choices(types_v, weights)[0]
@@ -189,7 +203,8 @@ def seed_all():
             round(random.uniform(50, 400), 1) if typ in ("autonome","velo","trottinette") else None
         ))
         row = cur.fetchone()
-        if row: vehicule_ids.append(row["vehicule_id"])
+        if row:
+            vehicule_ids.append(row["vehicule_id"])
     print(f"[OK] vehicules: {len(vehicule_ids)}")
 
     # ── trajets ──
@@ -198,9 +213,11 @@ def seed_all():
         vid = random.choice(vehicule_ids)
         zd  = random.choice(zone_list)
         za  = random.choice([z for z in zone_list if z != zd])
-        dep = now_utc() - timedelta(days=random.randint(0, 30),
-                                     hours=random.randint(0, 23),
-                                     minutes=random.randint(0, 59))
+        dep = now_utc() - timedelta(
+            days=random.randint(0, 30),
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59)
+        )
         dist = round(random.uniform(0.5, 25.0), 2)
         arr  = dep + timedelta(minutes=int(dist * random.uniform(2, 6)))
         eco  = round(dist * random.uniform(0.08, 0.21), 3)
@@ -214,24 +231,21 @@ def seed_all():
     """, trajet_batch, page_size=100)
     print(f"[OK] trajets: {len(trajet_batch)}")
 
-    # ── mesures (bulk — 30 days time-series) ──
+    # ── mesures (30-day time-series) ──
     active_capteurs = [(cid, capteur_types[cid]) for cid in capteur_ids]
-    mesure_batch = []
-    ANOMALY_PROB = 0.07  # 7% anomaly rate
+    mesure_batch    = []
+    ANOMALY_PROB    = 0.07
 
     for cid, typ in active_capteurs:
         measure_types = SENSOR_MEASURE_MAP.get(typ, ["pm25"])
-        # one reading every 30 min for 30 days = ~1440 per sensor
-        intervals = range(0, 30 * 24 * 2)  # every 30min
-        for i in intervals:
+        for i in range(0, 30 * 24 * 2):   # every 30 min for 30 days
             ts = now_utc() - timedelta(minutes=i * 30)
             for mt in measure_types:
                 is_anom = coin(ANOMALY_PROB)
-                val  = rand_val(mt, anomalie=is_anom)
-                unite = SEUILS[mt]["unite"]
+                val     = rand_val(mt, anomalie=is_anom)
+                unite   = SEUILS[mt]["unite"]
                 mesure_batch.append((cid, ts, mt, val, unite, is_anom))
 
-        # flush every 5000 rows
         if len(mesure_batch) >= 5000:
             psycopg2.extras.execute_batch(cur, """
                 INSERT INTO mesures (capteur_id, timestamp, type_mesure, valeur, unite, est_anomalie)
@@ -249,14 +263,15 @@ def seed_all():
     print(f"[OK] mesures: {cur.fetchone()['n']}")
 
     # ── interventions ──
-    signaled = [cid for cid in capteur_ids if coin(0.3)]
-    statuts_i = ["demande","tech1_assigne","tech2_valide","ia_valide","termine"]
+    signaled   = [cid for cid in capteur_ids if coin(0.3)]
+    statuts_i  = ["demande","tech1_assigne","tech2_valide","ia_valide","termine"]
     weights_i  = [0.15, 0.20, 0.25, 0.20, 0.20]
     for cid in signaled[:40]:
-        stat = random.choices(statuts_i, weights_i)[0]
-        t1   = random.choice(tech_ids) if stat != "demande" else None
-        t2   = random.choice([t for t in tech_ids if t != t1]) if stat in ("tech2_valide","ia_valide","termine") else None
-        ia   = stat in ("ia_valide","termine")
+        stat  = random.choices(statuts_i, weights_i)[0]
+        t1    = random.choice(tech_ids) if stat != "demande" else None
+        t2    = random.choice([t for t in tech_ids if t != t1]) \
+                if stat in ("tech2_valide","ia_valide","termine") else None
+        ia    = stat in ("ia_valide","termine")
         d_dem = now_utc() - timedelta(days=random.randint(0, 14))
         d_fin = d_dem + timedelta(days=random.randint(1, 7)) if stat == "termine" else None
         cur.execute("""
@@ -275,9 +290,7 @@ def seed_all():
     print(f"[OK] interventions: {cur.fetchone()['n']}")
 
     # ── fsm_transitions audit log ──
-    events_cap = ["installation","detection_anomalie","reparation","panne","mise_en_service"]
-    events_int = ["assignation_tech1","validation_tech2","validation_ia","cloture"]
-    fsm_batch  = []
+    fsm_batch = []
     for cid in random.sample(capteur_ids, min(30, len(capteur_ids))):
         chain = ["inactif","actif","signale","en_maintenance","actif"]
         evts  = ["installation","detection_anomalie","signalement","reparation"]
@@ -285,7 +298,7 @@ def seed_all():
             fsm_batch.append((
                 "capteur", cid, chain[j], chain[j+1], evts[j],
                 now_utc() - timedelta(days=random.randint(1, 90)),
-                f"system"
+                "system"
             ))
 
     psycopg2.extras.execute_batch(cur, """
@@ -298,7 +311,7 @@ def seed_all():
     conn.commit()
     cur.close()
     conn.close()
-    print("\n[OK] All done — database seeded.")
+    print("\n[OK] All done — database seeded successfully.")
 
 
 if __name__ == "__main__":

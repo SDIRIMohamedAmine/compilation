@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 """
 automata/fsm_engine.py
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "database"))
-Base engine: loads state from DB, validates transition, updates DB, writes audit log.
-All 3 machines inherit from this.
+Base FSM engine: loads state from DB, validates transition,
+updates DB, writes audit log. All 3 machines inherit from this.
 """
-import sys, os
+import sys
+import os
+
+# Ensure database/ is on the path when running from automata/ directly
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 from datetime import datetime, timezone
-from db_utils import fetch_one, execute
+from database.db_utils import fetch_one, execute
 
 
 class FSMError(Exception):
@@ -53,7 +57,8 @@ class BaseFSM:
         )
 
     def _log_transition(self, event: str, old_state: str, new_state: str, declencheur: str = "system"):
-        entity_type = self.TABLE.rstrip("s")   # capteurs->capteur, interventions->intervention
+        # capteurs -> capteur, interventions -> intervention, vehicules -> vehicule
+        entity_type = self.TABLE.rstrip("s")
         execute("""
             INSERT INTO fsm_transitions
                 (entity_type, entity_id, etat_avant, etat_apres, evenement, timestamp, declencheur)
@@ -80,16 +85,12 @@ class BaseFSM:
         old_state = self.state
         new_state = self.TRANSITIONS[key]
 
-        # 1. update DB
-        self._save_state(new_state)
-        # 2. update in-memory state
-        self.state = new_state
-        # 3. audit log
-        self._log_transition(event, old_state, new_state, declencheur)
-        # 4. callbacks
+        self._save_state(new_state)       # 1. persist to DB
+        self.state = new_state            # 2. update in-memory
+        self._log_transition(event, old_state, new_state, declencheur)  # 3. audit log
         cb = self.CALLBACKS.get(key)
         if cb:
-            cb(self.entity_id, **kwargs)
+            cb(self.entity_id, **kwargs)  # 4. callbacks
 
         return {
             "entity_id":   self.entity_id,
@@ -114,10 +115,10 @@ class BaseFSM:
             key = (state, ev)
             if key not in self.TRANSITIONS:
                 return {
-                    "valid": False,
-                    "failed_at": ev,
+                    "valid":            False,
+                    "failed_at":        ev,
                     "state_at_failure": state,
-                    "trace": trace,
+                    "trace":            trace,
                 }
             state = self.TRANSITIONS[key]
             trace.append(state)

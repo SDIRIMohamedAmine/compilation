@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 """
 compiler/semantic.py
-Phase 4: Validates AST against the DB schema.
-Raises SemanticError if column/table doesn't exist.
+Phase 3: Validates AST against the DB schema.
+Raises SemanticError if column / table doesn't exist.
 """
-from compiler.grammar import SCHEMA
+from compiler.grammar   import SCHEMA
 from compiler.ast_nodes import QueryNode, ConditionNode, AttributeNode, AggNode
 
 
 class SemanticError(Exception):
     pass
 
+
+# ── helpers ───────────────────────────────────────────────────────────────────
 
 def _check_table(table: str):
     if table not in SCHEMA:
@@ -29,54 +31,15 @@ def _check_column(table: str, column: str):
     # qualified names like "zones.nom" -> split
     if "." in column:
         table, column = column.split(".", 1)
-    if column.endswith(" AS total") or " AS " in column:
+    if " AS " in column:
+        column = column.split()[0]
+    if column.endswith(" AS total"):
         column = column.split()[0]
     if column not in SCHEMA.get(table, set()):
         raise SemanticError(
             f"Colonne '{column}' introuvable dans la table '{table}'. "
             f"Colonnes disponibles: {sorted(SCHEMA[table])}"
         )
-
-
-def analyze(ast: QueryNode) -> QueryNode:
-    """
-    Walk the AST, validate all table/column references.
-    Returns the same AST if valid, raises SemanticError otherwise.
-    """
-    target = ast.target
-    if not target:
-        raise SemanticError("Requete sans cible (aucune entite trouvee)")
-
-    table = target.entity
-
-    # special: pollution queries use mesures + join, main table becomes zones
-    if table == "zones" and ast.aggregation:
-        # mesures join is handled, skip strict check
-        return ast
-
-    _check_table(table)
-
-    # validate SELECT columns
-    for col in target.columns:
-        _check_column(table, col)
-
-    # validate condition
-    if ast.condition:
-        _check_condition(ast.condition, table)
-
-    # validate aggregation column
-    if ast.aggregation:
-        agg: AggNode = ast.aggregation
-        _check_column(table, agg.column)
-
-    # validate ORDER column
-    if ast.order:
-        col = ast.order.column
-        # alias (moy_valeur etc) always ok
-        if not col.startswith("moy") and not col.startswith("avg"):
-            _check_column(table, col)
-
-    return ast
 
 
 def _check_condition(cond: ConditionNode, table: str):
@@ -90,3 +53,44 @@ def _check_condition(cond: ConditionNode, table: str):
 
     if isinstance(cond.right, ConditionNode):
         _check_condition(cond.right, table)
+
+
+# ── main entry point ──────────────────────────────────────────────────────────
+
+def analyze(ast: QueryNode) -> QueryNode:
+    """
+    Walk the AST, validate all table/column references.
+    Returns the same AST if valid, raises SemanticError otherwise.
+    """
+    target = ast.target
+    if not target:
+        raise SemanticError("Requete sans cible (aucune entite trouvee)")
+
+    table = target.entity
+
+    # Pollution queries use zones + JOIN mesures — skip strict column check
+    if table == "zones" and ast.aggregation:
+        return ast
+
+    _check_table(table)
+
+    # Validate SELECT columns
+    for col in target.columns:
+        _check_column(table, col)
+
+    # Validate WHERE condition
+    if ast.condition:
+        _check_condition(ast.condition, table)
+
+    # Validate aggregation column
+    if ast.aggregation:
+        agg: AggNode = ast.aggregation
+        _check_column(table, agg.column)
+
+    # Validate ORDER column (aliases like moy_valeur are always fine)
+    if ast.order:
+        col = ast.order.column
+        if not col.startswith("moy") and not col.startswith("avg"):
+            _check_column(table, col)
+
+    return ast

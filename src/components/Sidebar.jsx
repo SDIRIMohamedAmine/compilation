@@ -7,6 +7,7 @@ const NAV = [
   { to: "/automata",      icon: "◈", label: "Automates FSM" },
   { to: "/sensors",       icon: "◉", label: "Capteurs" },
   { to: "/interventions", icon: "⚙", label: "Interventions" },
+  { to: "/vehicules",     icon: "⬡", label: "Véhicules" },
   { to: "/reports",       icon: "✦", label: "Rapports IA" },
 ];
 
@@ -43,9 +44,9 @@ export default function Sidebar() {
               padding: "8px 10px", borderRadius: "var(--radius)",
               textDecoration: "none", fontSize: 12,
               fontFamily: "var(--font-sans)",
-              color: isActive ? "var(--accent)" : "var(--text-2)",
+              color:      isActive ? "var(--accent)"     : "var(--text-2)",
               background: isActive ? "var(--accent-dim)" : "transparent",
-              border: isActive ? "1px solid var(--accent-dim)" : "1px solid transparent",
+              border:     isActive ? "1px solid var(--accent-dim)" : "1px solid transparent",
               transition: "all 0.15s",
             })}
           >

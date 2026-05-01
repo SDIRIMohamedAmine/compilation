@@ -4,16 +4,14 @@ compiler/compiler.py
 Orchestrator: raw French string -> SQL in one call.
 
 Usage:
-    from compiler import compile_query
+    from compiler.compiler import compile_query
     result = compile_query("Affiche les 5 zones les plus polluees")
     print(result["sql"])
-    print(result["tokens"])
-    print(result["ast"])
 """
-from lexer        import tokenize, LexerError
-from parser       import parse,    ParseError
-from semantic     import analyze,  SemanticError
-from code_generator import generate, CodeGenError
+from compiler.lexer          import tokenize, LexerError
+from compiler.parser         import parse,    ParseError
+from compiler.semantic       import analyze,  SemanticError
+from compiler.code_generator import generate, CodeGenError
 
 
 class CompilerError(Exception):

@@ -8,18 +8,20 @@ States:
                         -> EN_PANNE -> EN_ROUTE (after repair)
 
 Transitions table:
-  (stationne, depart)    -> en_route
-  (en_route,  arrivee)   -> arrive
-  (en_route,  panne)     -> en_panne
-  (en_panne,  reparation)-> en_route
-  (arrive,    depart)    -> en_route   (new trip)
+  (stationne, depart)     -> en_route
+  (en_route,  arrivee)    -> arrive
+  (en_route,  panne)      -> en_panne
+  (en_panne,  reparation) -> en_route
+  (arrive,    depart)     -> en_route   (new trip)
 """
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "database"))
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 from datetime import datetime, timezone
-from db_utils import execute, fetch_one
-from fsm_engine import BaseFSM
+from database.db_utils import execute, fetch_one
+from automata.fsm_engine import BaseFSM
 
 
 # ── callbacks ─────────────────────────────────────────────────────────────────
@@ -31,7 +33,6 @@ def _on_depart(vehicule_id: int, **kwargs):
             "UPDATE vehicules SET zone_actuelle_id=%s WHERE vehicule_id=%s",
             (zone_id, vehicule_id)
         )
-    # open a new trajet
     zone_arr = kwargs.get("zone_arrivee_id")
     if zone_id and zone_arr:
         execute("""
@@ -47,7 +48,6 @@ def _on_arrivee(vehicule_id: int, **kwargs):
             "UPDATE vehicules SET zone_actuelle_id=%s WHERE vehicule_id=%s",
             (zone_id, vehicule_id)
         )
-    # close the open trajet
     execute("""
         UPDATE trajets
         SET timestamp_arrivee = NOW(),
@@ -80,8 +80,8 @@ class VehiculeFSM(BaseFSM):
     }
 
     CALLBACKS = {
-        ("stationne", "depart"):     _on_depart,
-        ("arrive",    "depart"):     _on_depart,
-        ("en_route",  "arrivee"):    _on_arrivee,
-        ("en_route",  "panne"):      _on_panne,
+        ("stationne", "depart"):  _on_depart,
+        ("arrive",    "depart"):  _on_depart,
+        ("en_route",  "arrivee"): _on_arrivee,
+        ("en_route",  "panne"):   _on_panne,
     }
